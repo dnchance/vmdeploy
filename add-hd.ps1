@@ -26,7 +26,7 @@
 ##                                                                                  ##
 ######################################################################################
 ## Set Variables
-##
+
 ## CSV Location
 $Script = "confighd.csv"
 ## Set Datastore Names for specific Data types if not specified in CSV 
@@ -45,28 +45,28 @@ If (-not (Get-PSSnapin VMware.VimAutomation.Core -ErrorAction SilentlyContinue))
 	{
 	add-PSSnapin VMware.VimAutomation.Core | Out-Null 
 	}
-Connect-VIServer -Server $vicenter -force | Out-Null
+Connect-VIServer -Server $vicenter | Out-Null
 
 ## Imports CSV file and create drives.
 $vms = Import-Csv $script
 
 foreach ($vm in $vms){
-<#
+#Start building Application drive if it exists
     If($vm.D -ne ""){
-        Write-Host "Application Drive" #Start building Application drive if it exists
+        Write-Host "Application Drive" 
         new-harddisk -Persistence persistent -CapacityGB $vm.D -VM $vm.ServerName -StorageFormat EagerZeroedThick
     }
-
+#Start building Database drives if SQL Server
     If($vm.SQL -eq 1){
-        Write-Host "Building SQL Drives" #Start building Database drives if SQL Server
+        Write-Host "Building SQL Drives"
         new-harddisk -Persistence IndependentPersistent -CapacityGB $vm.E -VM $vm.ServerName -DataStore $SQLDataDS -StorageFormat EagerZeroedThick  | New-ScsiController -Type Paravirtual
         new-harddisk -Persistence IndependentPersistent -CapacityGB $vm.F -VM $vm.ServerName -DataStore $SQLLogsDS -StorageFormat EagerZeroedThick  | New-ScsiController -Type Paravirtual
         new-harddisk -Persistence IndependentPersistent -CapacityGB $vm.G -VM $vm.ServerName -DataStore $SQLTempDBDS -StorageFormat EagerZeroedThick  | New-ScsiController -Type Paravirtual
 
     }
-
+#Start building live Database Drives if value is present in CSV
     IF($vm.ldbds -ne ""){
-        Write-Host "Building LiveDB drives." #Start building live Database Drives if value is present in CSV
+        Write-Host "Building LiveDB drives."
         If($vm.ldbds -eq 1){
             write-host "=1"
             new-harddisk -Persistence IndependentPersistent -CapacityGB $vm.F -VM $vm.ServerName `
@@ -85,8 +85,7 @@ foreach ($vm in $vms){
             -DataStore $fnvr_evenDS -StorageFormat EagerZeroedThick | New-ScsiController -Type Paravirtual
         }
     }
-    #>
-    
+# RDM Drive Setup. Uses LUN Number to determine the disk ID and then adds it to the VM.     
     If($vm.LunID -ne ""){ 
         Write-Host "Creating Archive Drives" #Start building Archive drives as RDM if a LUN Number is present in the CSV 
         $runtimeID = "*" + $vm.LunID
@@ -94,5 +93,4 @@ foreach ($vm in $vms){
 
             new-harddisk -DiskType RawPhysical -DeviceName $devID.ConsoleDeviceName  -VM $vm.ServerName | New-ScsiController -Type ParaVirtual
     }
-    #>
 }

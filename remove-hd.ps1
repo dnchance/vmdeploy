@@ -1,5 +1,4 @@
-﻿
-## CSV Location
+﻿## CSV Location
 $scriptsource = "c:\scripts\confighd.csv"
 ## Set Datastore Names for specific Data types if not specified in CSV 
 $nvr_evenDS = "cata_nvr_livedb_evens"
